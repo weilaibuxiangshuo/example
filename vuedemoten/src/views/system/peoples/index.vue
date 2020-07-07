@@ -64,10 +64,10 @@
       <el-table ref="tableForm" :data="tableData" style="width: 100%">
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column type="index" label="ID" fixed="left"></el-table-column>
-        <el-table-column label="角色名称" prop="title" fixed="left"></el-table-column>
-        <el-table-column label="关联权限" prop="permission">
+        <el-table-column label="角色名称" prop="username" fixed="left"></el-table-column>
+        <el-table-column label="关联权限" prop="role">
           <template v-slot="perscope">
-            <div>{{ perscope.row.permission | filterper }}</div>
+            <div>{{ perscope.row.role | filterper }}</div>
           </template>
         </el-table-column>
         <el-table-column align="left" label="编辑" fixed="right">
@@ -199,7 +199,7 @@ export default {
           //   this.dialogform.method = this.dialogform.method[0]
           let menuData = JSON.stringify(this.dialogform);
           if (this.title === "EDIT") {
-            this.$store.dispatch("peoples/PutRole", menuData).then(response => {
+            this.$store.dispatch("peoples/PutUser", menuData).then(response => {
               console.log(response);
               this.getAllInfo();
             });
@@ -229,8 +229,6 @@ export default {
     // ----------- 表格渲染-----------
     // 获取所有目标
     getAllInfo() {
-      let mm = sha256("111111");
-      console.log("mm", mm);
       if (
         (this.pagin.currentPage - 1) * this.pagin.pagesize ==
           this.pagin.total &&
@@ -247,13 +245,14 @@ export default {
         // console.log("search", this.search);
         dataInfo["search"] = this.search.toString().trim();
       }
-      // this.$store.dispatch("peoples/GetRole", dataInfo).then(response => {
-      //   // console.log(response,"***");
-      //   this.tableData = response.data;
-      //   this.pagin.total = response.total;
-      // });
+      this.$store.dispatch("peoples/GetUser", dataInfo).then(response => {
+        // console.log(response,"***");
+        const {data,total} = response
+        this.tableData = data;
+        this.pagin.total = total;
+      });
       this.$store.dispatch("peoples/GetUserRole").then(response => {
-        console.log("dddd", response);
+        // console.log("dddd", response);
         const { data } = response;
         this.selectData = data;
       });
@@ -265,23 +264,19 @@ export default {
       this.title = "EDIT";
       this.dialogFormVisible = true;
       this.dialogform.id = row.id;
-      this.dialogform.title = row.title;
+      this.dialogform.username = row.username;
       let arr1 = [];
-      for (let n in row.permission) {
-        arr1.push(row.permission[n].id);
+      for (let n in row.role) {
+        arr1.push(row.role[n].id);
       }
-      // console.log(arr1,"arr")
-      // this.dialogform.permission = arr1
-      this.$nextTick(() => {
-        this.$refs.tree.setCheckedKeys(arr1);
-      });
+      this.dialogform.checkedData = arr1
     },
     // 删除
     handleDelete(index, row) {
       let arr1 = [];
       arr1.push(row.id);
       this.$store
-        .dispatch("peoples/DelRole", JSON.stringify({ id: arr1 }))
+        .dispatch("peoples/DelUser", JSON.stringify({ id: arr1 }))
         .then(response => {
           // console.log(response);
           this.pagin.total -= 1;
@@ -302,7 +297,7 @@ export default {
         this.pagin.total -= 1;
       }
       this.$store
-        .dispatch("peoples/DelRole", JSON.stringify({ id: arr1 }))
+        .dispatch("peoples/DelUser", JSON.stringify({ id: arr1 }))
         .then(response => {
           this.getAllInfo();
         });
