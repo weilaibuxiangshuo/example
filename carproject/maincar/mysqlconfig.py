@@ -1,6 +1,6 @@
 import peewee
 import asyncio
-from peewee_async import PooledMySQLDatabase, Manager
+from peewee_async import PooledMySQLDatabase, Manager,MySQLDatabase
 
 class asyncConnMysql:
     def __init__(self):
@@ -11,12 +11,12 @@ class asyncConnMysql:
             "password": "sudusudu",
             "port": 3306,
             "charset": "utf8",
-            "max_connections": 20,
+            # "max_connections": 20,
         }
         self.database = self.connection()
 
     def connection(self):
-        return PooledMySQLDatabase(**self.query)
+        return MySQLDatabase(**self.query)
 
     @property
     def newObject(self):
@@ -26,8 +26,8 @@ class asyncConnMysql:
 
 async def main():
     pp = asyncConnMysql().newObject
-    from apps.system.models import Users
-    await pp.create(Users, username="admin", password="$2b$12$3RTJw3DyPmkQtaAoTOFhd.tIrzXpGKrT9oio.ymzMZJDguYcksH8S")
+    # from apps.system.models import Users
+    # await pp.create(Users, username="admin", password="$2b$12$3RTJw3DyPmkQtaAoTOFhd.tIrzXpGKrT9oio.ymzMZJDguYcksH8S")
 
 if __name__=="__main__":
     loop = asyncio.get_event_loop()

@@ -6,22 +6,9 @@
       <div class="secondheader">
         <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加权限</el-button>
         <div class="msgsearch">
-          <el-input
-            type="text"
-            class="searchStyle"
-            v-model="search"
-            size="small"
-            placeholder="权限搜索"
-            clearable
-            @change="serchPutChange"
-          ></el-input>
-          <el-button
-            type="warning"
-            icon="el-icon-search"
-            size="small"
-            @click.native.prevent="btnSearch"
-            circle
-          ></el-button>
+        <el-input placeholder="权限搜索" v-model.trim="search" clearable @change="serchPutChange" style="width:350px">
+          <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"  ></el-button>
+        </el-input>
         </div>
       </div>
       <hr />
@@ -35,10 +22,10 @@
       >
         <el-form :model="dialogform" ref="ruleForm" :rules="rules">
           <el-form-item label="权限名称" :label-width="formLabelWidth" prop="title">
-            <el-input v-model="dialogform.title" autocomplete="off" clearable></el-input>
+            <el-input v-model.trim="dialogform.title" autocomplete="off" clearable></el-input>
           </el-form-item>
           <el-form-item label="相应地址" :label-width="formLabelWidth" prop="url">
-            <el-input v-model="dialogform.url" autocomplete="off" clearable></el-input>
+            <el-input v-model.trim="dialogform.url" autocomplete="off" clearable></el-input>
           </el-form-item>
           <el-form-item label="请求方式" :label-width="formLabelWidth" prop="method">
             <el-checkbox-group v-model="dialogform.method" :max=1>
@@ -66,14 +53,14 @@
       </el-dialog>
 
       <!-- 表格渲染 -->
-      <el-table ref="tableForm" :data="tableData" style="width: 100%">
+      <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column type="index" label="ID" fixed="left"></el-table-column>
         <el-table-column label="权限名称" prop="title" fixed="left"></el-table-column>
         <el-table-column label="相应地址" prop="url"></el-table-column>
         <el-table-column label="请求方式" prop="method"></el-table-column>
         <el-table-column label="关联菜单" prop="menu"></el-table-column>
-        <el-table-column align="left" label="编辑" fixed="right">
+        <el-table-column align="left" label="编辑" fixed="right" width="150px">
           <template v-slot="scope">
             <el-button size="mini" @click.native.prevent="handleEdit(scope.$index, scope.row)">Edit</el-button>
             <el-button
@@ -130,6 +117,21 @@ const defaultPagin = {
 
 export default {
   data() {
+    var methodVali=(rule, value, callback)=>{
+      if (value.length===0){
+        return callback(new Error('请求方式不能为空'))
+      }else{
+        return callback()
+      }
+    };
+    var menuVali=(rule, value, callback)=>{
+      const newVal = value.toString().trim()
+      if(!!newVal){
+        return callback()
+      }else{
+        return callback(new Error("请选择对应菜单"))
+      }
+    };
     return {
       // -----------添加及搜索-----------
       search: "",
@@ -149,6 +151,16 @@ export default {
           { required: true, message: "请输入菜单名称", trigger: "blur" },
           { min: 3, max: 32, message: "长度在 3 到 32 个字符", trigger: "blur" }
         ],
+        url: [
+          { required: true, message: "请输入相应地址", trigger: "blur" },
+          { min: 1, max: 255, message: "长度在 1 到 255 个字符", trigger: "blur" }
+        ],
+        method:[
+          {trigger:"blur",validator:methodVali,required:true},
+        ],
+        menu:[
+          {trigger:"blur",validator:menuVali,required:true},
+        ],
       }
     };
   },
@@ -162,7 +174,6 @@ export default {
     },
     // 搜索框没有值时触发
     serchPutChange(val) {
-      // console.log("666",val)
       let newVal = val.toString().trim();
       if (newVal == "") {
         this.getAllInfo();
@@ -183,25 +194,20 @@ export default {
     },
     // 确定送出
     confirm() {
-      // console.log("---",this.dialogform)
       this.$refs["ruleForm"].validate(val => {
         if (val) {
           this.dialogFormVisible = false;
-          console.log("--",this.dialogform)
-        //   this.dialogform.method = this.dialogform.method[0]
           let menuData = JSON.stringify(this.dialogform);
           if (this.title === "EDIT") {
             this.$store
               .dispatch("permissions/PutPermission", menuData)
               .then(response => {
-                console.log(response)
                   this.getAllInfo()
               });
           } else {
             this.$store
               .dispatch("permissions/AddPermission", menuData)
               .then((response) => {
-                  console.log(response)
                   this.getAllInfo();
               });
           }
@@ -229,23 +235,21 @@ export default {
         pagesize: this.pagin.pagesize
       };
       if (!!this.search.toString().trim()) {
-        console.log("search", this.search);
         dataInfo["search"] = this.search.toString().trim();
+        dataInfo["currentpage"] = 1;
+        this.pagin.currentPage =1;
       }
       this.$store.dispatch("permissions/GetPermission", dataInfo).then(response => {
-        console.log(response);
         this.tableData = response.data;
         this.pagin.total = response.total;
       });
       this.$store.dispatch("permissions/GetPermissionMenu").then(response => {
-          console.log("dddd",response)
         const { data } = response;
         this.selectData = data;
       });
     },
     // 编辑
     handleEdit(index, row) {
-      // console.log(row)
       this.dialogform = Object.assign({}, defaultDialogForm);
       this.title = "EDIT";
       this.dialogFormVisible = true;
@@ -262,7 +266,6 @@ export default {
       this.$store
         .dispatch("permissions/DelPermission", JSON.stringify({ id: arr1 }))
         .then(response => {
-          // console.log(response);
           this.pagin.total -= 1;
           this.getAllInfo();
         });
@@ -369,5 +372,9 @@ export default {
 
 .msgsearch {
   display: inline-block;
+}
+
+.msgsearch /deep/ .el-button {
+  margin: 0;
 }
 </style>

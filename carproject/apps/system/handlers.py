@@ -1,36 +1,36 @@
 # -*- coding:utf-8 -*-
 from tornado.web import RequestHandler, gen, authenticated
-from playhouse.shortcuts import model_to_dict
-import peewee_async, json
+import peewee_async, json,hashlib
 
 from apps.system.models import Menus, Permissions, Roles, Users, rolePermission,userRole
 from apps.system.forms import MenusForm, PermissionsForm, RoleForm,UserForm
 
 from tools.bcrpt_api import PasswordApi as pd
-from tools.jwt_api import JwtApi as jt
 from tools.resful_api import Resf as rf
-from tools.json_serialization import json_serial
 from apps.system import utils
+from tools.decorator_api import dispatch_methods
+from maincar.authoruser import newAuth
 
-
+@dispatch_methods(newAuth)
 class MenuHandler(RequestHandler):
     # 分页返回数据
     async def get(self, page, size, *args, **kwargs):
-        resData = {}
+
+        # 所有过滤或查询的列表集合
+        allDataQuery = []
         page = int(page)
         size = int(size)
+
         # 判断search是否有值，有值返回搜索的值
         try:
             search = self.request.arguments['search'][0].decode("utf8")
         except Exception as f:
             search = None
-            pass
         if search:
-            menusObj = await self.application.objects.execute(Menus.select().where(Menus.title == search))
-        else:
-            menusObj = await self.application.objects.execute(
-                Menus.select().paginate(page, paginate_by=size).order_by(Menus.id.desc()))
-        total = await self.application.objects.execute(Menus.select())
+            allDataQuery.append((Menus.title == search))
+
+        menusObj = await self.application.objects.execute(Menus.newData(allDataQuery).paginate(page, paginate_by=size).order_by(Menus.id.desc()))
+        total = await self.application.objects.execute(Menus.newData(allDataQuery))
         list1 = []
         for menu in menusObj:
             dict1 = {
@@ -39,6 +39,7 @@ class MenuHandler(RequestHandler):
                 "icon": menu.icon,
                 "path": menu.path,
                 "code": menu.code,
+                "ord":menu.ord,
                 "parent": menu.sub_id if menu.sub_id else "",
             }
             list1.append(dict1)
@@ -53,16 +54,14 @@ class MenuHandler(RequestHandler):
         reqInfo = json.loads(self.request.body.decode("utf8"))
         # 转换格式为wtform-tornado支持
         reqInfo = {m: [n] for m, n in reqInfo.items()}
-        # print(reqInfo['parent'][0])
         valiForm = MenusForm(reqInfo)
+
         # 验证前端传值是否正确
         if valiForm.validate():
-            # print(valiForm.data)
             obj = valiForm.data
-            # print("obj",obj)
             try:
                 await self.application.objects.get(Menus, title=obj['title'])
-                resData = rf().set(400, "失败菜单名已存在")
+                resData = rf().set(404, "失败菜单名已存在")
                 return self.finish(resData)
             except Exception as f:
                 dict1 = {
@@ -70,6 +69,7 @@ class MenuHandler(RequestHandler):
                     "icon": obj['icon'],
                     "path": obj['path'],
                     "code": obj['code'],
+                    "ord":int(obj['ord']),
                 }
                 # 判断前端是否传父菜单id
                 if reqInfo['parent'][0]:
@@ -78,13 +78,12 @@ class MenuHandler(RequestHandler):
                 resData = rf().code(201)
                 self.finish(resData)
         else:
-            resData = valiForm.errors
-            resData = rf().code(400)
+            resData = rf().code(404)
+            resData['msg'] = valiForm.errors
             self.finish(resData)
 
     # 修改数据
     async def put(self, *args, **kwargs):
-        print("put")
         resData = {}
         temp = json.loads(self.request.body.decode("utf8"))
         reqInfo = {m: [n] for m, n in temp.items()}
@@ -93,40 +92,37 @@ class MenuHandler(RequestHandler):
             try:
                 oneEdit = await self.application.objects.get(Menus, id=reqInfo['id'])
             except Exception as e:
-                self.finish(rf().set(400, "失败提交信息有误"))
+                self.finish(rf().set(404, "失败提交信息有误"))
             else:
                 obj = reqvali.data
                 oneEdit.title = obj['title']
                 oneEdit.icon = obj['icon']
                 oneEdit.path = obj['path']
                 oneEdit.code = obj['code']
+                oneEdit.ord = obj['ord']
                 # 父菜单的值没有验证，直接从请求中获取并判断
                 oneEdit.sub_id = None if str(reqInfo['parent'][0]).strip() == "" else int(
                     str(reqInfo['parent'][0]).strip())
                 await self.application.objects.update(oneEdit)
                 resData = rf().code(202)
         else:
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] = reqvali.errors
         return self.finish(resData)
 
     # 删除数据
     async def delete(self, *args, **kwargs):
-        # print(self.request.body.decode("utf8"))
         reqInfo = json.loads(self.request.body.decode("utf8"))
         for one in reqInfo['id']:
             one = int(one)
-            # print(one)
-            # parent = Menus.alias()
             await self.application.objects.execute(Menus.delete().where(Menus.id == one))
         self.finish(rf().code(204))
 
-
+@dispatch_methods(newAuth)
 class MenuListHandler(RequestHandler):
     async def get(self, *args, **kwargs):
         resData = {}
         await self.application.objects.execute(Menus.select().for_update())
-        # print(Menus.select().for_update(),"===")
         menusObj = await self.application.objects.execute(Menus.select())
         # 返回所有菜单信息
         list1 = []
@@ -141,27 +137,28 @@ class MenuListHandler(RequestHandler):
         resData["data"] = list1
         return self.finish(resData)
 
-
+@dispatch_methods(newAuth)
 class PermissionHandler(RequestHandler):
 
     # 分页返回数据
     async def get(self, page, size, *args, **kwargs):
-        resData = {}
+
+        # 所有过滤或查询的列表集合
+        allDataQuery = []
         page = int(page)
         size = int(size)
+
         # 判断search是否有值，有值返回搜索的值
         try:
             search = self.request.arguments['search'][0].decode("utf8")
         except Exception as f:
             search = None
-            pass
         if search:
-            permissionObj = await self.application.objects.execute(
-                Permissions.select().where(Permissions.title == search))
-        else:
-            permissionObj = await self.application.objects.execute(
-                Permissions.select().paginate(page, paginate_by=size).order_by(Permissions.id.desc()))
-        total = await self.application.objects.execute(Permissions.select())
+            allDataQuery.append((Permissions.title == search))
+
+        permissionObj = await self.application.objects.execute(Permissions.newData(allDataQuery).paginate(page, paginate_by=size).order_by(Permissions.id.desc()))
+        total = await self.application.objects.execute(Permissions.newData(allDataQuery))
+
         list1 = []
         for per in permissionObj:
             menuTitle = await self.application.objects.get(Menus, id=per.menu_id)
@@ -181,7 +178,6 @@ class PermissionHandler(RequestHandler):
 
     # 添加权限
     async def post(self, *args, **kwargs):
-        # print(self.request.body.decode("utf8"))
         resData = {}
         reqData = json.loads(self.request.body.decode("utf8"))
         # 生成wtform-tornado验证格式
@@ -191,7 +187,7 @@ class PermissionHandler(RequestHandler):
             data = valiDict.data
             try:
                 await self.application.objects.get(Permissions, title=data['title'])
-                return self.finish(rf().set(400, "失败用户已存在"))
+                return self.finish(rf().set(404, "失败用户已存在"))
             except Exception as f:
                 async with self.application.objects.atomic():
                     await self.application.objects.create(Permissions, title=data['title'], url=data['url'],
@@ -199,13 +195,12 @@ class PermissionHandler(RequestHandler):
                     resData = rf().code(201)
                     return self.finish(resData)
         else:
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] = valiDict.errors
             return self.finish(resData)
 
     # 修改数据
     async def put(self, *args, **kwargs):
-        print("put")
         resData = {}
         temp = json.loads(self.request.body.decode("utf8"))
         reqInfo = {m: [str(n)] for m, n in temp.items()}
@@ -214,7 +209,7 @@ class PermissionHandler(RequestHandler):
             try:
                 oneEdit = await self.application.objects.get(Permissions, id=reqInfo['id'])
             except Exception as e:
-                self.finish(rf().set(400, "失败提交信息有误"))
+                self.finish(rf().set(404, "失败提交信息有误"))
             else:
                 obj = reqvali.data
                 oneEdit.title = obj['title']
@@ -224,20 +219,19 @@ class PermissionHandler(RequestHandler):
                 await self.application.objects.update(oneEdit)
                 resData = rf().code(202)
         else:
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] =  reqvali.errors
         return self.finish(resData)
 
     # 删除数据
     async def delete(self, *args, **kwargs):
-        # print(self.request.body.decode("utf8"))
         reqInfo = json.loads(self.request.body.decode("utf8"))
         for one in reqInfo['id']:
             one = int(one)
             await self.application.objects.execute(Permissions.delete().where(Permissions.id == one))
         self.finish(rf().code(204))
 
-
+@dispatch_methods(newAuth)
 class PermissionMenuHandler(RequestHandler):
     # 获取最后一级所有菜单
     async def get(self, *args, **kwargs):
@@ -257,7 +251,7 @@ class PermissionMenuHandler(RequestHandler):
         resData['data'] = resList
         return self.finish(resData)
 
-
+@dispatch_methods(newAuth)
 class RolePermissionHandler(RequestHandler):
 
     # 返回菜单拼接权限的列表
@@ -298,32 +292,31 @@ class RolePermissionHandler(RequestHandler):
 
         #根据底层菜单拼接权限
         dataJoin = await utils.deepRes(self, menuResList,0,dataList)
-        # print(dataJoin)
         resData1 = rf().code(200)
         resData1["data"] = dataJoin
         return self.finish(resData1)
 
-
+@dispatch_methods(newAuth)
 class RoleHandler(RequestHandler):
 
     # 分页返回数据
     async def get(self, page, size, *args, **kwargs):
-        print("分页")
-        resData = {}
+
+        # 所有过滤或查询的列表集合
+        allDataQuery = []
         page = int(page)
         size = int(size)
+
         # 判断search是否有值，有值返回搜索的值
         try:
             search = self.request.arguments['search'][0].decode("utf8")
         except Exception as f:
             search = None
-            pass
         if search:
-            roleObj = await self.application.objects.execute(Roles.select().where(Roles.title == search))
-        else:
-            roleObj = await self.application.objects.execute(
-                Roles.select().paginate(page, paginate_by=size).order_by(Roles.id.desc()))
-        total = await self.application.objects.execute(Roles.select())
+            allDataQuery.append((Roles.title == search))
+
+        roleObj = await self.application.objects.execute(Roles.newData(allDataQuery).paginate(page, paginate_by=size).order_by(Roles.id.desc()))
+        total = await self.application.objects.execute(Roles.newData(allDataQuery))
         list1 = []
         for one in roleObj:
             perList = []
@@ -347,15 +340,13 @@ class RoleHandler(RequestHandler):
 
     async def post(self, *args, **kwargs):
         resData = {}
-        # print(self.request.body.decode("utf8"))
         reqData = json.loads(self.request.body.decode("utf8"))
         reqList = {m: [str(n)] for m, n in reqData.items()}
         result = RoleForm(reqList)
         if result.validate():
-            # print(result.data)
             try:
                 await self.application.objects.get(Roles, title=reqData['title'])
-                return self.finish(rf().set(400, "失败用户已存在"))
+                return self.finish(rf().set(404, "失败用户已存在"))
             except Roles.DoesNotExist as e:
                 # 过滤出权限id列表
                 perList = [int(str(i).split('permission-')[1]) for i in reqData["permission"] if
@@ -368,14 +359,12 @@ class RoleHandler(RequestHandler):
                             await self.application.objects.create(rolePermission, roles_id=roleOne.id, permissions_id=c)
                 return self.finish(rf().code(201))
         else:
-            # print(result.errors)
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] = result.errors
             return self.finish(resData)
 
     # 修改数据
     async def put(self, *args, **kwargs):
-        # print(self.request.body.decode("utf8"))
         reqData = json.loads(self.request.body.decode("utf8"))
         reqList = {m: [str(n)] for m, n in reqData.items()}
         result = RoleForm(reqList)
@@ -384,7 +373,7 @@ class RoleHandler(RequestHandler):
             try:
                 oneRole = await self.application.objects.get(Roles, id=reqData['id'])
             except Roles.DoesNotExist as e:
-                return self.finish(rf().set(400, "失败用户不存在"))
+                return self.finish(rf().set(404, "失败用户不存在"))
             async with self.application.objects.atomic():
                 oneRole.title = valiData['title']
                 await self.application.objects.update(oneRole)
@@ -399,20 +388,19 @@ class RoleHandler(RequestHandler):
                         await self.application.objects.create(rolePermission, roles_id=oneRole.id, permissions_id=c)
                 return self.finish(rf().code(202))
         else:
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] = result.errors
             return self.finish(resData)
 
     # 删除数据
     async def delete(self, *args, **kwargs):
-        # print(self.request.body.decode("utf8"))
         reqInfo = json.loads(self.request.body.decode("utf8"))
         for one in reqInfo['id']:
             one = int(one)
             await self.application.objects.execute(Roles.delete().where(Roles.id == one))
         self.finish(rf().code(204))
 
-
+@dispatch_methods(newAuth)
 class UserRoleHandler(RequestHandler):
     """
     返回所有角色列表
@@ -430,31 +418,114 @@ class UserRoleHandler(RequestHandler):
         resData['data'] = resList
         return self.finish(resData)
 
-
+@dispatch_methods(newAuth)
 class UserHandler(RequestHandler):
 
+    # 分页返回数据
+    async def get(self, page, size, *args, **kwargs):
+
+        # 所有过滤或查询的列表集合
+        allDataQuery = []
+        page = int(page)
+        size = int(size)
+
+        # 判断search是否有值，有值返回搜索的值
+        try:
+            search = self.request.arguments['search'][0].decode("utf8")
+        except Exception as f:
+            search = None
+        if search:
+            allDataQuery.append((Users.username == search))
+
+        userAllObj = await self.application.objects.execute(
+            Users.newData(allDataQuery).paginate(page, paginate_by=size).order_by(Users.id.desc()))
+        total = await self.application.objects.execute(Users.newData(allDataQuery))
+
+        list1 = []
+        for one in userAllObj:
+            roleList = []
+            #获取跟用户关联的角色
+            roleObj = await self.application.objects.execute(one.role)
+            for t in roleObj:
+                temp = {
+                    "id": t.id,
+                    "title": t.title,
+                }
+                roleList.append(temp)
+            dict1 = {
+                "id": one.id,
+                "username": one.username,
+                "is_superuser":one.is_superuser,
+                "role": roleList,
+            }
+            list1.append(dict1)
+        resData = rf().code(200)
+        resData["data"] = list1
+        resData["total"] = len(total)
+        return self.finish(resData)
+
+    #添加用户
     async def post(self,*args,**kwargs):
-        print(self.request.body.decode("utf8"))
         reqData = json.loads(self.request.body.decode("utf8"))
         # 生成wtform-tornado验证格式
         reqDict = {m: [str(n)] for m, n in reqData.items()}
         valiDict = UserForm(reqDict)
         if valiDict.validate():
-            print("通过")
             newData = valiDict.data
-            print(newData)
             try:
                 await self.application.objects.get(Users, username=reqData['username'])
-                resData = rf().set(400,"失败用户已存在")
+                resData = rf().set(404,"失败用户已存在")
                 return self.finish(resData)
             except Users.DoesNotExist as e:
                 async with self.application.objects.atomic():
+                    newData["password"] = pd().hashed(newData['password'])
                     oneUser = await self.application.objects.create(Users,**newData)
                     for n in reqData['checkedData']:
                         await self.application.objects.create(userRole,users_id=oneUser.id,roles_id=n)
                 return self.finish(rf().code(201))
         else:
-            print(valiDict.errors)
-            resData = rf().code(400)
+            resData = rf().code(404)
             resData['msg'] = valiDict.errors
             return self.finish(resData)
+
+
+    # 修改数据
+    async def put(self, *args, **kwargs):
+        reqData = json.loads(self.request.body.decode("utf8"))
+        reqList = {m: [str(n)] for m, n in reqData.items()}
+        valiDict = UserForm(reqList)
+        if valiDict.validate():
+            valiData = valiDict.data
+            try:
+                oneUser = await self.application.objects.get(Users, id=reqData['id'])
+            except Users.DoesNotExist as e:
+                return self.finish(rf().set(404, "失败用户不存在"))
+            pwd_bcrpt = pd().hashed(valiData['password'])
+            # oneUser.password = hashlib.sha256(valiData['password'].encode('utf8')).hexdigest()
+            async with self.application.objects.atomic():
+                params = {
+                    "username":valiData['username'],
+                    "password":pwd_bcrpt,
+                }
+                await self.application.objects.execute(Users.update(**params).where(Users.id == oneUser.id))
+
+                #删除对应角色
+                await self.application.objects.execute(userRole.delete().where(userRole.users_id == oneUser.id))
+                #过滤出权限id列表
+                if not len(reqData["checkedData"] ) == 0:
+                    for c in reqData["checkedData"]:
+                        # 给角色添加权限
+                        await self.application.objects.create(userRole, users_id=oneUser.id, roles_id=c)
+            return self.finish(rf().code(202))
+        else:
+            resData = rf().code(404)
+            resData['msg'] = valiDict.errors
+            return self.finish(resData)
+
+    # 删除数据
+    async def delete(self, *args, **kwargs):
+        reqInfo = json.loads(self.request.body.decode("utf8"))
+        for one in reqInfo['id']:
+            one = int(one)
+            await self.application.objects.execute(Users.delete().where(Users.id == one))
+        self.finish(rf().code(204))

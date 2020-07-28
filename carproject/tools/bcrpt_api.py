@@ -25,13 +25,12 @@ class PasswordApi:
                 hash = str(hash).encode("utf8")
             else:
                 hash = hash.encode("utf8")
-
         return bcrypt.checkpw(pwd,hash)
 
 
 if __name__=="__main__":
     pd = PasswordApi()
-    import hashlib
-    hexpwd = hashlib.sha256("111111".encode('utf8')).hexdigest()
-    print(hexpwd)
-    print(pd.hashed(hexpwd))
+    # import hashlib
+    # hexpwd = hashlib.sha256("111111".encode('utf8')).hexdigest()
+    # print(hexpwd)
+    # print(pd.hashed(hexpwd))

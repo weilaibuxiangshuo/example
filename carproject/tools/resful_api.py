@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+
 class Resf(object):
     """
     200  服务器成功返回用户的请求数据
@@ -15,21 +16,22 @@ class Resf(object):
     500 服务器错误，用户无法进行判断是否请求成功
     """
 
-    listCode = {
-        200: {"code": 200, "msg": "请求成功"},
-        201: {"code": 201, "msg": "创建成功"},
-        202: {"code": 202, "msg": "更新成功"},
-        204: {"code": 204, "msg": "删除成功"},
-        400: {"code": 400, "msg": "信息有误"},
-        401: {"code": 401, "msg": "用户没有权限"},
-        403: {"code": 403, "msg": "此信息有误"},
-    }
+    def __init__(self):
+        self.listCode = {
+            200: {"code": 200, "msg": "请求成功"},
+            201: {"code": 201, "msg": "创建成功"},
+            202: {"code": 202, "msg": "更新成功"},
+            204: {"code": 204, "msg": "删除成功"},
+            400: {"code": 400, "msg": "信息有误"},
+            401: {"code": 401, "msg": "用户没有权限"},
+            403: {"code": 403, "msg": "此信息有误"},
+            404: {"code": 404, "msg": "操作失败"},
+        }
 
-    @classmethod
-    def code(cls,num):
-        return cls.listCode[num]
 
-    @classmethod
-    def set(cls,num,msg):
+    def code(self, num):
+        return self.listCode[num]
+
+    def set(self, num, msg):
         res = {"code": num, "msg": msg}
-        return  res
+        return res

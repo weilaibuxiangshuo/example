@@ -7,8 +7,9 @@ from tools.resful_api import Resf as rf
 class JwtApi:
     def __init__(self):
         self.key = "ue_g&-4t2lhrd3+biy%1ujy0dsa8ayo6iq(@+&rup3#w==*)vxas8"
-        #设置过期时间30秒
+        #设置过期时间1天
         self.expTime = datetime.utcnow()+timedelta(days=1)
+        # self.expTime = datetime.utcnow()+timedelta(seconds=30)
 
     def encode(self,data):
         newData = {"exp":self.expTime}
@@ -24,10 +25,9 @@ class JwtApi:
         try:
             res = jwt.decode(jwtToken, self.key, algorithms=['HS256'])
             return res
-        except jwt.exceptions.ExpiredSignatureError as e:
-            return rf.code(401)
-        except Exception as f:
-            return rf.code(400)
+        except Exception as e:
+            print(e)
+            return None
 
 if __name__=="__main__":
     temp = JwtApi()

@@ -10,6 +10,7 @@ class MenusForm(Form):
     icon = StringField('图标',validators=[data_required("图标不能为空"),length(min=1,max=32,message="长度在1到32位字符")])
     path = StringField('地址',validators=[data_required("地址不能为空"),length(min=1,max=128,message="长度在1到128位字符")])
     code = StringField('编号',validators=[data_required("编号不能为空"),length(min=1,max=32,message="长度在1到32位字符")])
+    ord = IntegerField('序号',validators=[data_required("序号不能为空")])
 
 
 class PermissionsForm(Form):
@@ -29,5 +30,5 @@ class RoleForm(Form):
 
 
 class UserForm(Form):
-    username = StringField('用户名',validators=[length(max=32,min=3,message="长度在5到32个字符"),data_required("角色名不能为空")])
+    username = StringField('用户名',validators=[length(max=32,min=5,message="长度在5到32个字符"),data_required("角色名不能为空")])
     password = StringField('密码',validators=[length(min=6,message="长度至少6个字符或以上"),data_required("密码不能为空")])

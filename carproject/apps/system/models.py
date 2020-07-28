@@ -7,7 +7,18 @@ class Menus(BaseModel):
     icon = peewee.CharField(max_length=32,verbose_name="图标")
     path = peewee.CharField(max_length=128,verbose_name="路径")
     code = peewee.CharField(max_length=32,verbose_name="编号")
+    ord = peewee.IntegerField(verbose_name="序号",null=True)
     sub = peewee.ForeignKeyField("self", related_name="children", null=True, on_delete="CASCADE")
+
+    @classmethod
+    def newData(cls,params):
+        params = tuple(params)
+        if params:
+            return cls.select().where(*params)
+        else:
+            return cls.select()
+
+
     class Meta:
         table_name="menus"
 
@@ -17,12 +28,30 @@ class Permissions(BaseModel):
     url = peewee.CharField(max_length=255,verbose_name="地址")
     method = peewee.CharField(max_length=30,verbose_name="请求方式")
     menu = peewee.ForeignKeyField(Menus,related_name="permiss_menu",null=True,on_delete="CASCADE")
+
+    @classmethod
+    def newData(cls,params):
+        params = tuple(params)
+        if params:
+            return cls.select().where(*params)
+        else:
+            return cls.select()
+
     class Meta:
         table_name = "permissions"
 
 class Roles(BaseModel):
     title = peewee.CharField(max_length=32,verbose_name="角色名")
     permission = peewee.ManyToManyField(Permissions, backref="role_permission",on_delete="CASCADE")
+
+    @classmethod
+    def newData(cls,params):
+        params = tuple(params)
+        if params:
+            return cls.select().where(*params)
+        else:
+            return cls.select()
+
     class Meta:
         table_name="roles"
 
@@ -37,7 +66,20 @@ class Users(BaseModel):
     is_lock = peewee.BooleanField(default=False,verbose_name="是否锁定")
     is_confirm = peewee.BooleanField(default=False,verbose_name="是否确定")
     role = peewee.ManyToManyField(Roles, backref="user_role",on_delete="CASCADE")
+
+    @classmethod
+    def newData(cls,params):
+        params = tuple(params)
+        if params:
+            return cls.select().where(*params)
+        else:
+            return cls.select()
+
     class Meta:
         table_name = "users"
 
+
+
 userRole = Users.role.get_through_model()
+
+

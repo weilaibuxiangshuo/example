@@ -6,22 +6,9 @@
       <div class="secondheader">
         <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加角色</el-button>
         <div class="msgsearch">
-          <el-input
-            type="text"
-            class="searchStyle"
-            v-model="search"
-            size="small"
-            placeholder="角色搜索"
-            clearable
-            @change="serchPutChange"
-          ></el-input>
-          <el-button
-            type="warning"
-            icon="el-icon-search"
-            size="small"
-            @click.native.prevent="btnSearch"
-            circle
-          ></el-button>
+        <el-input placeholder="角色搜索" v-model.trim="search" clearable @change="serchPutChange" style="width:350px">
+          <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"  ></el-button>
+        </el-input>
         </div>
       </div>
       <hr />
@@ -35,7 +22,7 @@
       >
         <el-form :model="dialogform" ref="ruleForm" :rules="rules">
           <el-form-item label="角色名称" :label-width="formLabelWidth" prop="title">
-            <el-input v-model="dialogform.title" autocomplete="off" clearable></el-input>
+            <el-input v-model.trim="dialogform.title" autocomplete="off" clearable></el-input>
           </el-form-item>
           <el-form-item label="关联权限" :label-width="formLabelWidth">
             <el-tree
@@ -57,10 +44,10 @@
       </el-dialog>
 
       <!-- 表格渲染 -->
-      <el-table ref="tableForm" :data="tableData" style="width: 100%">
+      <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column type="index" label="ID" fixed="left"></el-table-column>
-        <el-table-column label="角色名称" prop="title" fixed="left"></el-table-column>
+        <el-table-column label="角色名称" prop="title" fixed="left" width="150px"></el-table-column>
         <el-table-column label="关联权限" prop="permission">
           <template v-slot="perscope">
             <div>
@@ -68,7 +55,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column align="left" label="编辑" fixed="right">
+        <el-table-column align="left" label="编辑" fixed="right" width="150px">
           <template v-slot="scope">
             <el-button size="mini" @click.native.prevent="handleEdit(scope.$index, scope.row)">Edit</el-button>
             <el-button
@@ -161,7 +148,6 @@ export default {
     },
     // 搜索框没有值时触发
     serchPutChange(val) {
-      // console.log("666",val)
       let newVal = val.toString().trim();
       if (newVal == "") {
         this.getAllInfo();
@@ -184,28 +170,21 @@ export default {
     },
     // 确定送出
     confirm() {
-      // console.log("---",this.dialogform)
       this.$refs["ruleForm"].validate(val => {
         if (val) {
           this.dialogFormVisible = false;
-          // console.log("--", this.dialogform);
           this.dialogform.permission = this.$refs['tree'].getCheckedKeys();
-          //   this.dialogform.method = this.dialogform.method[0]
           let menuData = JSON.stringify(this.dialogform);
-          console.log(this.$refs['tree'].getCheckedKeys())
-          // this.$refs.tree.setCheckedKeys([]);
           if (this.title === "EDIT") {
             this.$store
               .dispatch("roles/PutRole", menuData)
               .then(response => {
-                console.log(response);
                 this.getAllInfo();
               });
           } else {
             this.$store
               .dispatch("roles/AddRole", menuData)
               .then(response => {
-                console.log(response);
                 this.getAllInfo();
               });
           }
@@ -223,6 +202,7 @@ export default {
     // ----------- 表格渲染-----------
     // 获取所有目标
     getAllInfo() {
+      // this.pagin = Object.assign({},defaultPagin)
       if (
         (this.pagin.currentPage - 1) * this.pagin.pagesize ==
           this.pagin.total &&
@@ -236,23 +216,22 @@ export default {
         pagesize: this.pagin.pagesize
       };
       if (!!this.search.toString().trim()) {
-        // console.log("search", this.search);
         dataInfo["search"] = this.search.toString().trim();
+        // 有搜索需要恢复初始值，否则会显示错误
+        dataInfo["currentpage"] = 1;
+        this.pagin.currentPage = 1;
       }
       this.$store.dispatch("roles/GetRole", dataInfo).then(response => {
-        // console.log(response,"***");
         this.tableData = response.data;
         this.pagin.total = response.total;
       });
       this.$store.dispatch("roles/GetRolePermission").then(response => {
-        // console.log("dddd", response);
         const { data } = response;
         this.selectData = data;
       });
     },
     // 编辑
     handleEdit(index, row) {
-      console.log(row)
       this.dialogform = Object.assign({}, defaultDialogForm);
       this.title = "EDIT";
       this.dialogFormVisible = true;
@@ -262,8 +241,6 @@ export default {
       for(let n in row.permission){
         arr1.push(row.permission[n].id)
       }
-      // console.log(arr1,"arr")
-      // this.dialogform.permission = arr1
       this.$nextTick(()=>{
         this.$refs.tree.setCheckedKeys(arr1)
       })
@@ -275,7 +252,6 @@ export default {
       this.$store
         .dispatch("roles/DelRole", JSON.stringify({ id: arr1 }))
         .then(response => {
-          // console.log(response);
           this.pagin.total -= 1;
           this.getAllInfo();
         });
@@ -321,7 +297,6 @@ export default {
   },
   filters:{
     "filterper":function(val){
-      // console.log(val,val.constructor===Array)
       let arr1 = []
       for(let n in val){
         arr1.push(val[n].title)
@@ -395,5 +370,9 @@ export default {
 
 .msgsearch {
   display: inline-block;
+}
+
+.msgsearch /deep/ .el-button {
+  margin: 0;
 }
 </style>

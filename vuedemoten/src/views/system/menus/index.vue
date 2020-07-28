@@ -5,23 +5,11 @@
       <!-- 添加及搜索 -->
       <div class="secondheader">
         <el-button @click="addData" type="success">添加菜单</el-button>
+        
         <div class="msgsearch">
-          <el-input
-            type="text"
-            class="searchStyle"
-            v-model="search"
-            size="small"
-            placeholder="菜单搜索"
-            clearable
-            @change="serchPutChange"
-          ></el-input>
-          <el-button
-            type="warning"
-            icon="el-icon-search"
-            size="small"
-            @click.native.prevent="btnSearch"
-            circle
-          ></el-button>
+        <el-input placeholder="菜单搜索" v-model.trim="search" clearable @change="serchPutChange" style="width:350px">
+          <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"  ></el-button>
+        </el-input>
         </div>
       </div>
       <hr />
@@ -34,17 +22,20 @@
         :before-close="handleClose"
       >
         <el-form :model="dialogform" ref="ruleForm" :rules="rules">
-          <el-form-item label="菜单名称" :label-width="formLabelWidth" prop="title">
-            <el-input v-model="dialogform.title" autocomplete="off" clearable></el-input>
+          <el-form-item label="菜单名称" :label-width="formLabelWidth" prop="title" >
+            <el-input v-model.trim="dialogform.title" autocomplete="off" clearable placeholder="请输入菜单名称"></el-input>
           </el-form-item>
           <el-form-item label="图标名称" :label-width="formLabelWidth" prop="icon">
-            <el-input v-model="dialogform.icon" autocomplete="off" clearable></el-input>
+            <el-input v-model.trim="dialogform.icon" autocomplete="off" clearable placeholder="请输入图标名称"></el-input>
           </el-form-item>
           <el-form-item label="对应地址" :label-width="formLabelWidth" prop="path">
-            <el-input v-model="dialogform.path" autocomplete="off" clearable></el-input>
+            <el-input v-model.trim="dialogform.path" autocomplete="off" clearable placeholder="请输入对应地址"></el-input>
+          </el-form-item>
+          <el-form-item label="排列顺序" :label-width="formLabelWidth" prop="ord">
+            <el-input v-model.trim="dialogform.ord" autocomplete="off" clearable placeholder="请输入数字"></el-input>
           </el-form-item>
           <el-form-item label="菜单编号" :label-width="formLabelWidth" prop="code">
-            <el-input v-model="dialogform.code" autocomplete="off" clearable disabled></el-input>
+            <el-input v-model="dialogform.code" autocomplete="off" clearable disabled ></el-input>
           </el-form-item>
           <el-form-item label="父类菜单" :label-width="formLabelWidth" prop="parent">
             <el-select v-model="dialogform.parent" placeholder="请选择活动区域">
@@ -52,7 +43,7 @@
               <el-option
                 :key="index"
                 v-for="(one,index) in selectData"
-                :label="one.title"
+                :label="one.title+'--'+one.code+'级'"
                 :value="one.id"
               ></el-option>
             </el-select>
@@ -65,19 +56,21 @@
       </el-dialog>
 
       <!-- 表格渲染 -->
-      <el-table ref="tableForm" :data="tableData" style="width: 100%" >
+      <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
         <el-table-column type="selection" width="55" ></el-table-column>
-        <el-table-column type="index" label="ID" fixed="left"></el-table-column>
+        <el-table-column type="index" label="ID" fixed="left" width="50px"></el-table-column>
         <el-table-column label="菜单" prop="title" fixed="left"></el-table-column>
+        <el-table-column label="序号" prop="ord" width="50px"></el-table-column>
         <el-table-column label="图标" prop="icon"></el-table-column>
-        <el-table-column label="编号" prop="code"></el-table-column>
+        
         <el-table-column label="父级" prop="parent" v-slot="scope">
           <template>
             <div>{{ scope.row.parent | parentfilter(selectData)}}</div>
           </template>
         </el-table-column>
         <el-table-column label="地址" prop="path"></el-table-column>
-        <el-table-column align="left" label="编辑" fixed="right">
+        <el-table-column label="编号" prop="code" width="50px"></el-table-column>
+        <el-table-column align="left" label="编辑" fixed="right" width="150px">
           <template v-slot="scope">
             <el-button size="mini" @click="handleEdit(scope.$index, scope.row)">Edit</el-button>
             <el-button
@@ -115,6 +108,7 @@ const defaultDialogForm = {
   id:"",
   title: "",
   icon: "",
+  ord:"",
   path: "",
   code: "1",
   parent: ""
@@ -151,7 +145,11 @@ export default {
         ],
         icon: [
           { required: true, message: "请输入图标名称", trigger: "blur" },
-          { min: 1, max: 32, message: "长度在 1 到 32 个字符", trigger: "blur" }
+          { min: 3, max: 32, message: "长度在 1 到 32 个字符", trigger: "blur" }
+        ],
+        ord: [
+          { required: true, message: "请输入排列顺序", trigger: "blur" },
+          { min: 1, max: 6, message: "长度在 1 到 6 位数字", trigger: "blur" }
         ],
         path: [
           { required: true, message: "请输入对应地址", trigger: "blur" },
@@ -180,7 +178,6 @@ export default {
     },
     // 搜索框没有值时触发
     serchPutChange(val) {
-      // console.log("666",val)
       let newVal = val.toString().trim();
       if (newVal == "") {
         this.getAllInfo();
@@ -201,14 +198,12 @@ export default {
     },
     // 确定送出
     confirm() {
-      // console.log("---",this.dialogform)
       this.$refs["ruleForm"].validate(val => {
         if (val) {
           this.dialogFormVisible = false;
           let menuData = JSON.stringify(this.dialogform);
           if(this.title === "EDIT"){
             this.$store.dispatch("menus/PutMenu", menuData).then((response)=>{
-              // console.log(response)
               this.getAllInfo()
             }); 
           }else{
@@ -240,11 +235,12 @@ export default {
         pagesize: this.pagin.pagesize
       };
       if (!!this.search.toString().trim()) {
-        console.log("search",this.search)
         dataInfo["search"] = this.search.toString().trim();
+        // 有搜索需要恢复初始值，否则会显示错误
+        dataInfo["currentpage"] = 1;
+        this.pagin.currentPage =1;
       }
       this.$store.dispatch("menus/GetMenu", dataInfo).then(response => {
-        // console.log(response);
         this.tableData = response.data;
         this.pagin.total = response.total;
       });
@@ -274,7 +270,6 @@ export default {
       this.$store
         .dispatch("menus/DelMenu", JSON.stringify({"id":arr1}))
         .then(response => {
-          // console.log(response);
           this.pagin.total -= 1;
           this.getAllInfo();
         });
@@ -404,5 +399,8 @@ export default {
 
 .msgsearch {
   display: inline-block;
+}
+.msgsearch /deep/ .el-button {
+  margin: 0;
 }
 </style>

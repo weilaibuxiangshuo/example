@@ -15,5 +15,6 @@ urlpatterns = [
     URLSpec("/role/permission/", RolePermissionHandler),
     URLSpec("/role/(\d+)/(\d+)/", RoleHandler),
     URLSpec("/user/", UserHandler),
+    URLSpec("/user/(\d+)/(\d+)/", UserHandler),
     URLSpec("/user/role/", UserRoleHandler),
 ]

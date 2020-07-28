@@ -8,6 +8,10 @@ import menus from './modules/menus'
 import permissions from './modules/permissions'
 import roles from './modules/roles'
 import peoples from './modules/peoples'
+import management from './modules/management'
+import process from './modules/process'
+import displaystand from './modules/displaystand'
+import failsearch from './modules/failsearch'
 
 Vue.use(Vuex)
 
@@ -20,6 +24,10 @@ const store = new Vuex.Store({
     permissions,
     roles,
     peoples,
+    management,
+    process,
+    displaystand,
+    failsearch,
   },
   getters
 })
