@@ -67,7 +67,7 @@
     <div class="datamain">
       <!-- 表格渲染 -->
       <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
-        <el-table-column type="selection" width="40px" v-dataBtnControl="this.$route"></el-table-column>
+        <el-table-column type="selection" width="40px"  v-if="selectShow"></el-table-column>
         <el-table-column label="日期" prop="date_group" fixed width="50px">
           <template slot-scope="scope">
             <el-popover trigger="hover" placement="top">
@@ -138,14 +138,14 @@
         </el-input>
       </div>
       <div class="paginationStyle">
-        <el-button type="primary" icon="el-icon-share" @click="selectAllData" size="mini" v-dataBtnControl="this.$route">全选</el-button>
+        <el-button type="primary" icon="el-icon-share" @click="selectAllData" size="mini" v-if="selectShow">全选</el-button>
         <el-button
           type="primary"
           icon="el-icon-delete"
           class="btnDelStyle"
           @click="delAllData"
           size="mini"
-          v-dataBtnControl="this.$route"
+          v-if="selectShow"
         >全删</el-button>
         <el-pagination
           @size-change="handleSizeChange"
@@ -219,6 +219,7 @@ export default {
       is_show_btn: true,
       tableData: [],
       isActiveFreeze: true,
+      selectShow:true,
       // ----------- 分页-----------
       totalSum: "",
       smallSum: "",
@@ -311,8 +312,17 @@ export default {
       this.$refs["ruleForm"].resetFields();
     },
     // ----------- 表格渲染-----------
+    isIfShowSelect(){
+        const per = this.$route.meta.permission
+        for (let n in per){
+            if(per[n]!=="超级管理组"){
+                this.selectShow =  false
+            }
+        }
+    },
     // 获取所有目标
     getAllInfo() {
+
       this.paramsdict = Object.assign({}, {});
       if (!!this.timeChange) {
         this.paramsdict["timeinfo"] = JSON.stringify(this.timeChange);
@@ -413,6 +423,7 @@ export default {
     },
   },
   created() {
+    this.isIfShowSelect()
     // this.getAllInfo();
   },
 };

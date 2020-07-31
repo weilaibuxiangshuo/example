@@ -65,7 +65,6 @@
     <div class="datamain">
       <!-- 表格渲染 -->
       <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
-        <el-table-column type="selection" width="40px"></el-table-column>
         <el-table-column label="日期" prop="date_group" fixed width="50px">
           <template slot-scope="scope">
             <el-popover trigger="hover" placement="top">

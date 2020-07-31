@@ -85,7 +85,7 @@ class ManagementHandler(RequestHandler):
                 "is_freeze": one.is_freeze,
                 "is_lock": one.is_lock,
                 "is_confirm": one.is_confirm,
-                "date_group": one.date_group.strftime('%Y-%m-%d'),
+                "date_group": one.add_time.strftime('%Y-%m-%d %H:%M:%S'),
             }
             list1.append(dict1)
         resData = rf().code(200)
@@ -322,7 +322,7 @@ class EventProcessHandler(RequestHandler):
                 "is_lock": one.is_lock,
                 "user_group": one.user_group,
                 "lock_user": one.lock_user,
-                "date_group": one.date_group.strftime('%Y-%m-%d'),
+                "date_group": one.add_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "is_if_show": is_if_show,
                 "operator": self.current_user if is_if_show else (one.operator if one.operator else one.lock_user),
             }
@@ -542,7 +542,7 @@ class DisplaystandHandler(RequestHandler):
                 "user_group": one.user_group,
                 "lock_user": one.lock_user,
                 "spare1": one.spare1,
-                "date_group": one.date_group.strftime('%Y-%m-%d'),
+                "date_group": one.add_time.strftime('%Y-%m-%d %H:%M:%S'),
                 "is_if_show": is_if_show,
                 "operator": self.current_user if is_if_show else (one.operator if one.operator else one.lock_user),
             }
@@ -658,7 +658,7 @@ class FailSearchHandler(RequestHandler):
                 "user_group": one.user_group,
                 "lock_user": one.lock_user,
                 "spare1": one.spare1,
-                "date_group": one.date_group.strftime('%Y-%m-%d'),
+                "date_group": one.add_time.strftime('%Y-%m-%d %H:%M:%S'),
             }
             list1.append(dict1)
         resData = rf().code(200)
