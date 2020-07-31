@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import json
+import json,re
 
 from wtforms.fields import StringField,IntegerField
 from wtforms.validators import length,data_required,StopValidation,ValidationError
@@ -32,3 +32,14 @@ class RoleForm(Form):
 class UserForm(Form):
     username = StringField('用户名',validators=[length(max=32,min=5,message="长度在5到32个字符"),data_required("角色名不能为空")])
     password = StringField('密码',validators=[length(min=6,message="长度至少6个字符或以上"),data_required("密码不能为空")])
+
+
+class WhiteForm(Form):
+    ip = StringField('IP地址')
+
+    def validate_ip(self,field):
+        if len(field.data)==0:
+            return ValidationError("IP地址不能为空")
+        reg = re.compile(r'^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+        if not reg:
+            return ValidationError("IP地址格式不正确")

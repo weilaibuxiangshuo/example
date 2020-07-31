@@ -21,6 +21,9 @@
             <el-button type="success" @click.native.prevent="addData">添加记录</el-button>
           </el-form-item>
           <el-form-item>
+            <el-button type="primary" icon="el-icon-refresh-left" plain @click.native.prevent="refreshData"></el-button>
+          </el-form-item>
+          <el-form-item>
             <el-input
               placeholder="请输入内容"
               v-model.trim="searchContext"
@@ -60,19 +63,7 @@
         width="550px"
       >
         <el-form :model="dialogform" ref="ruleForm" :rules="rules">
-          <el-form-item
-            label="所属银行"
-            :label-width="formLabelWidth"
-            prop="cardclass"
-            class="amountStyle"
-          >
-            <el-input
-              v-model.trim="dialogform.cardclass"
-              autocomplete="off"
-              clearable
-              placeholder="请输入所属银行"
-            ></el-input>
-          </el-form-item>
+
           <el-form-item label="会员账号" :label-width="formLabelWidth" prop="account">
             <el-input
               v-model.trim="dialogform.account"
@@ -89,17 +80,18 @@
               placeholder="请输入真实姓名"
             ></el-input>
           </el-form-item>
+ 
           <el-form-item
-            label="对应金额"
+            label="所属银行"
             :label-width="formLabelWidth"
-            prop="amount"
+            prop="cardclass"
             class="amountStyle"
           >
             <el-input
-              v-model.trim="dialogform.amount"
+              v-model.trim="dialogform.cardclass"
               autocomplete="off"
               clearable
-              placeholder="请输入对应金额"
+              placeholder="请输入所属银行"
             ></el-input>
           </el-form-item>
           <el-form-item
@@ -113,6 +105,19 @@
               autocomplete="off"
               clearable
               placeholder="请输入银行卡号"
+            ></el-input>
+          </el-form-item>
+          <el-form-item
+            label="对应金额"
+            :label-width="formLabelWidth"
+            prop="amount"
+            class="amountStyle"
+          >
+            <el-input
+              v-model.trim="dialogform.amount"
+              autocomplete="off"
+              clearable
+              placeholder="请输入对应金额"
             ></el-input>
           </el-form-item>
           <el-form-item label="信息备注" :label-width="formLabelWidth">
@@ -258,8 +263,8 @@ const defaultDialogForm = {
 // 分页初始值
 const defaultPagin = {
   currentPage: 1,
-  pagesizes: [3, 20, 50],
-  pagesize: 3,
+  pagesizes: [10, 20, 50],
+  pagesize: 10,
   total: 0,
 };
 
@@ -398,6 +403,23 @@ export default {
       this.pagin.currentPage = 1;
       this.boolStatus = true;
       this.getAllInfo();
+    },
+    // 添加目标
+    refreshData() {
+      if (!!this.timeChange) {
+        this.getAllInfo();
+      } else {
+        const h = this.$createElement;
+        this.$notify({
+          message: h(
+            "b",
+            { style: "color: #ef9206" },
+            "请先选择-所属日期，才能添加记录"
+          ),
+          duration: 2000,
+        });
+        return false;
+      }
     },
     // 添加目标
     addData() {

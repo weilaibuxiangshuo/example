@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 from tornado.web import URLSpec
+# import apps.system.urls.urlpatterns as systemurl
 from apps.system.urls import urlpatterns as systemurl
 from apps.record.urls import urlpatterns as recordurl
 

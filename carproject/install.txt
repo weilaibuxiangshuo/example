@@ -1,15 +1,12 @@
-aiohttp==3.6.2
 aiomysql==0.0.20
 async-timeout==3.0.1
 attrs==19.3.0
 bcrypt==3.1.7
-beautifulsoup4==4.9.1
 certifi==2020.4.5.1
 cffi==1.14.0
 chardet==3.0.4
 cryptography==2.9.2
 cssselect==1.1.0
-get==2019.4.13
 idna==2.9
 idna-ssl==1.1.0
 lxml==4.5.1
@@ -18,7 +15,6 @@ multidict==4.7.6
 mysqlclient==1.4.6
 peewee==3.13.3
 peewee-async==0.7.0
-post==2019.4.13
 public==2019.4.13
 pycparser==2.20
 PyJWT==1.7.1

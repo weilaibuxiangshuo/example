@@ -12,6 +12,7 @@ import management from './modules/management'
 import process from './modules/process'
 import displaystand from './modules/displaystand'
 import failsearch from './modules/failsearch'
+import whitelist from './modules/whitelist'
 
 Vue.use(Vuex)
 
@@ -28,6 +29,7 @@ const store = new Vuex.Store({
     process,
     displaystand,
     failsearch,
+    whitelist,
   },
   getters
 })

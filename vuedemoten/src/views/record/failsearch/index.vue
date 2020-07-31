@@ -153,8 +153,8 @@
 // 分页初始值
 const defaultPagin = {
   currentPage: 1,
-  pagesizes: [3, 20, 50],
-  pagesize: 3,
+  pagesizes: [10, 20, 50],
+  pagesize: 10,
   total: 0,
 };
 

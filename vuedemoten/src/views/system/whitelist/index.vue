@@ -6,11 +6,11 @@
       <div class="secondheader">
         <el-form ref="btnForm" :inline="true" class="demo-ruleForm">
           <el-form-item>
-            <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加角色</el-button>
+            <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加IP</el-button>
           </el-form-item>
           <el-form-item>
             <el-input
-              placeholder="角色搜索"
+              placeholder="IP搜索"
               v-model.trim="search"
               clearable
               @change="serchPutChange"
@@ -19,6 +19,15 @@
               <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"></el-button>
             </el-input>
           </el-form-item>
+          <el-form-item class="btnControlIp">
+            <el-switch
+                v-model="btnip"
+                :active-text="btnip?'IP限制开启':'IP限制关闭'"
+                active-color="#13ce66"
+                inactive-color="#ff4949"
+                @change="btnipevent"
+              ></el-switch>
+          </el-form-item>
         </el-form>
       </div>
       <hr />
@@ -26,25 +35,17 @@
     <div class="datamain">
       <!-- 弹窗对话框  -->
       <el-dialog
-        :title="title==='NEW'?'添加角色':'编辑角色'"
+        :title="title==='NEW'?'添加IP':'编辑IP'"
         :visible.sync="dialogFormVisible"
         :before-close="handleClose"
       >
         <el-form :model="dialogform" ref="ruleForm" :rules="rules">
-          <el-form-item label="角色名称" :label-width="formLabelWidth" prop="title">
-            <el-input v-model.trim="dialogform.title" autocomplete="off" clearable></el-input>
+          <el-form-item label="IP地址" :label-width="formLabelWidth" prop="ip">
+            <el-input v-model.trim="dialogform.ip" autocomplete="off" clearable></el-input>
           </el-form-item>
-          <el-form-item label="关联权限" :label-width="formLabelWidth">
-            <el-tree
-              :data="selectData"
-              show-checkbox
-              default-expand-all
-              node-key="id"
-              ref="tree"
-              highlight-current
-              :props="defaultProps"
-              class="treeStyle"
-            ></el-tree>
+          <el-form-item label="IP状态" :label-width="formLabelWidth" prop="is_through">
+            <el-radio v-model="dialogform.is_through" label="1">启用</el-radio>
+            <el-radio v-model="dialogform.is_through" label="2">禁用</el-radio>
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
@@ -55,17 +56,14 @@
 
       <!-- 表格渲染 -->
       <el-table ref="tableForm" :data="tableData" style="width: 100%" border>
-        <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column type="index" label="ID" fixed="left"></el-table-column>
-        <el-table-column label="角色名称" prop="title" fixed="left" width="150px"></el-table-column>
-        <el-table-column label="关联权限" prop="permission">
-          <template v-slot="perscope">
-            <div>
-              {{ perscope.row.permission | filterper }}
-            </div>
+        <el-table-column label="IP地址" prop="ip" fixed="left"></el-table-column>
+        <el-table-column label="状态" prop="is_through" fixed="left">
+          <template v-slot="scope">
+            <div>{{scope.row.is_through==='2'?"禁用":"启用"}}</div>
           </template>
         </el-table-column>
-        <el-table-column align="left" label="编辑" fixed="right" width="150px">
+        <el-table-column align="left" label="编辑" fixed="right">
           <template v-slot="scope">
             <el-button size="mini" @click.native.prevent="handleEdit(scope.$index, scope.row)">Edit</el-button>
             <el-button
@@ -79,15 +77,6 @@
     </div>
     <!-- 分页及按钮 -->
     <div class="datafooter">
-      <div class="btnStyle">
-        <el-button type="primary" icon="el-icon-share" @click.native.prevent="selectAllData">全选</el-button>
-        <el-button
-          type="primary"
-          icon="el-icon-delete"
-          class="btnDelStyle"
-          @click.native.prevent="delAllData"
-        >全删</el-button>
-      </div>
       <div class="paginationStyle">
         <el-pagination
           @size-change="handleSizeChange"
@@ -106,7 +95,8 @@
 // 弹窗对话框初始值
 const defaultDialogForm = {
   id: "",
-  title: "",
+  ip: "",
+  is_through: "2",
 };
 
 // 分页初始值
@@ -114,46 +104,64 @@ const defaultPagin = {
   currentPage: 1,
   pagesizes: [10, 20, 50],
   pagesize: 10,
-  total: 0
+  total: 0,
 };
 
 export default {
   data() {
+    const ipVali = (rule,value,callback) =>{
+      const str= value.toString()
+      if(str.length===0){
+        return callback(new Error("IP地址不能为空"))
+      }
+      const  reg = /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/
+      if(!str.match(reg)){
+        return callback(new Error("IP地址格式不正确"))
+      }
+      
+      return callback()
+    }
     return {
       // -----------添加及搜索-----------
+      btnip: false,
       search: "",
       // ----------- 弹窗对话框-----------
       dialogFormVisible: false,
       title: "NEW",
       dialogform: Object.assign({}, defaultDialogForm),
       formLabelWidth: "100px",
-      selectData: [],
-      defaultProps:{
-      children: 'children',
-      label: 'title'
-      },
       // ----------- 表格渲染-----------
       tableData: [],
       // ----------- 分页-----------
       pagin: Object.assign({}, defaultPagin),
       // ----------- 验证-----------
       rules: {
-        title: [
-          { required: true, message: "请输入菜单名称", trigger: "blur" },
-          { min: 3, max: 32, message: "长度在 3 到 32 个字符", trigger: "blur" }
+        ip: [
+          { required: true, validator:ipVali, trigger: "blur" },
         ],
-      }
+      },
     };
   },
   methods: {
     // -----------添加及搜索-----------
+    btnipevent(val){
+        const btndata = this.btnip?"1":"2"
+        this.$store
+              .dispatch("whitelist/SetWhitelist", JSON.stringify({"btncontrol":btndata}))
+              .then((response) => {
+                this.getAllInfo();
+                const { code, msg } = response;
+                this.$message({
+                  type:
+                    code.toString().substr(0, 1) === "2" ? "success" : "error",
+                  message: msg,
+                });
+        });
+    },
     // 添加目标
     addData() {
       this.title = "NEW";
       this.dialogform = Object.assign({}, defaultDialogForm);
-      this.$nextTick(()=>{
-        this.$refs['tree'].setCheckedKeys([])
-      })
       this.dialogFormVisible = true;
     },
     // 搜索框没有值时触发
@@ -175,27 +183,37 @@ export default {
       this.dialogFormVisible = false;
       this.dialogform = Object.assign({}, defaultDialogForm);
       this.$refs["ruleForm"].resetFields();
-      this.$refs.tree.setCheckedKeys([]);
       done();
     },
     // 确定送出
     confirm() {
-      this.$refs["ruleForm"].validate(val => {
+      this.$refs["ruleForm"].validate((val) => {
         if (val) {
           this.dialogFormVisible = false;
-          this.dialogform.permission = this.$refs['tree'].getCheckedKeys();
-          let menuData = JSON.stringify(this.dialogform);
+          let whiteData = JSON.stringify(this.dialogform);
           if (this.title === "EDIT") {
             this.$store
-              .dispatch("roles/PutRole", menuData)
-              .then(response => {
+              .dispatch("whitelist/PutWhitelist", whiteData)
+              .then((response) => {
                 this.getAllInfo();
+                const { code, msg } = response;
+                this.$message({
+                  type:
+                    code.toString().substr(0, 1) === "2" ? "success" : "error",
+                  message: msg,
+                });
               });
           } else {
             this.$store
-              .dispatch("roles/AddRole", menuData)
-              .then(response => {
+              .dispatch("whitelist/AddWhitelist", whiteData)
+              .then((response) => {
                 this.getAllInfo();
+                const { code, msg } = response;
+                this.$message({
+                  type:
+                    code.toString().substr(0, 1) === "2" ? "success" : "error",
+                  message: msg,
+                });
               });
           }
         }
@@ -206,7 +224,6 @@ export default {
       this.dialogFormVisible = false;
       this.dialogform = Object.assign({}, defaultDialogForm);
       this.$refs["ruleForm"].resetFields();
-      this.$refs.tree.setCheckedKeys([]);
     },
 
     // ----------- 表格渲染-----------
@@ -223,7 +240,7 @@ export default {
       let dataInfo = {
         currentpage:
           this.pagin.currentPage === null ? 1 : this.pagin.currentPage,
-        pagesize: this.pagin.pagesize
+        pagesize: this.pagin.pagesize,
       };
       if (!!this.search.toString().trim()) {
         dataInfo["search"] = this.search.toString().trim();
@@ -231,14 +248,13 @@ export default {
         dataInfo["currentpage"] = 1;
         this.pagin.currentPage = 1;
       }
-      this.$store.dispatch("roles/GetRole", dataInfo).then(response => {
-        this.tableData = response.data;
-        this.pagin.total = response.total;
-      });
-      this.$store.dispatch("roles/GetRolePermission").then(response => {
-        const { data } = response;
-        this.selectData = data;
-      });
+      this.$store
+        .dispatch("whitelist/GetWhitelist", dataInfo)
+        .then((response) => {
+          this.tableData = response.data;
+          this.pagin.total = response.total;
+          this.btnip = response.is_global;
+        });
     },
     // 编辑
     handleEdit(index, row) {
@@ -246,45 +262,26 @@ export default {
       this.title = "EDIT";
       this.dialogFormVisible = true;
       this.dialogform.id = row.id;
-      this.dialogform.title = row.title;
-      let arr1 = []
-      for(let n in row.permission){
-        arr1.push(row.permission[n].id)
-      }
-      this.$nextTick(()=>{
-        this.$refs.tree.setCheckedKeys(arr1)
-      })
+      this.dialogform.ip = row.ip;
+      this.dialogform.is_through = row.is_through;
     },
     // 删除
     handleDelete(index, row) {
       let arr1 = [];
       arr1.push(row.id);
       this.$store
-        .dispatch("roles/DelRole", JSON.stringify({ id: arr1 }))
-        .then(response => {
+        .dispatch("whitelist/DelWhitelist", JSON.stringify({ id: arr1 }))
+        .then((response) => {
           this.pagin.total -= 1;
           this.getAllInfo();
+          const { code, msg } = response;
+          this.$message({
+            type: code.toString().substr(0, 1) === "2" ? "success" : "error",
+            message: msg,
+          });
         });
     },
     // ----------- 分页-----------
-    // 全选
-    selectAllData() {
-      this.$refs.tableForm.toggleAllSelection();
-    },
-    // 全删
-    delAllData() {
-      let arr1 = [];
-      const temp = this.$refs.tableForm.selection;
-      for (let t in temp) {
-        arr1.push(temp[t].id);
-        this.pagin.total -= 1;
-      }
-      this.$store
-        .dispatch("roles/DelRole", JSON.stringify({ id: arr1 }))
-        .then(response => {
-          this.getAllInfo();
-        });
-    },
     // 当前一页显示数量
     handleSizeChange(val) {
       let isR = val * this.pagin.currentPage > this.pagin.total;
@@ -300,26 +297,16 @@ export default {
     handleCurrentChange(val) {
       this.pagin.currentPage = val;
       this.getAllInfo();
-    }
+    },
   },
   created() {
     this.getAllInfo();
   },
-  filters:{
-    "filterper":function(val){
-      let arr1 = []
-      for(let n in val){
-        arr1.push(val[n].title)
-      }
-      return arr1.join(",")
-    }
-  }
 };
 </script>
 <style scoped>
-
 .treeStyle {
-  margin-top:7px;
+  margin-top: 7px;
 }
 
 .dataheader {
@@ -350,12 +337,6 @@ export default {
 .msgheader span:last-child {
   margin-left: 10px;
 }
-.btnStyle {
-  display: inline-block;
-  margin-top: 20px;
-  margin-left: 30px;
-  vertical-align: middle;
-}
 
 .paginationStyle {
   margin-top: 20px;
@@ -369,4 +350,9 @@ export default {
   border-color: #f56c6c;
 }
 
+.btnControlIp {
+    border: 1px solid #DCDFE6;
+    padding: 0 5px 0 5px;
+    border-radius: 4px;
+}
 </style>

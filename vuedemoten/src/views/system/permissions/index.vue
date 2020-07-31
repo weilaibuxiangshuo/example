@@ -4,12 +4,22 @@
       <div class="firstheader"></div>
       <!-- 添加及搜索 -->
       <div class="secondheader">
-        <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加权限</el-button>
-        <div class="msgsearch">
-        <el-input placeholder="权限搜索" v-model.trim="search" clearable @change="serchPutChange" style="width:350px">
-          <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"  ></el-button>
-        </el-input>
-        </div>
+        <el-form ref="btnForm" :inline="true" class="demo-ruleForm">
+          <el-form-item>
+            <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加权限</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-input
+              placeholder="权限搜索"
+              v-model.trim="search"
+              clearable
+              @change="serchPutChange"
+              style="width:350px"
+            >
+              <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"></el-button>
+            </el-input>
+          </el-form-item>
+        </el-form>
       </div>
       <hr />
     </div>
@@ -110,9 +120,9 @@ const defaultDialogForm = {
 // 分页初始值
 const defaultPagin = {
   currentPage: 1,
-  pagesizes: [3, 20, 50],
-  pagesize: 3,
-  total: 15
+  pagesizes: [10, 20, 50],
+  pagesize: 10,
+  total: 0
 };
 
 export default {
@@ -359,22 +369,5 @@ export default {
 .btnDelStyle {
   background-color: #f56c6c;
   border-color: #f56c6c;
-}
-
-.spstyle {
-  margin-right: 61px;
-}
-
-.searchStyle {
-  width: 200px;
-  margin-left: 20px;
-}
-
-.msgsearch {
-  display: inline-block;
-}
-
-.msgsearch /deep/ .el-button {
-  margin: 0;
 }
 </style>

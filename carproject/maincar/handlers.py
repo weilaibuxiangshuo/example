@@ -17,9 +17,6 @@ from maincar.authoruser import newAuth
 
 class LoginHandler(RequestHandler):
 
-    async def get(self,num,*args,**kwargs):
-        return self.finish(rf().code(200))
-
     async def post(self,*args,**kwargs):
         req = json.loads(self.request.body.decode("utf8"))
         try:
@@ -54,11 +51,21 @@ class IndexHandler(RequestHandler):
         #角色列表
         roleList=[]
         #获取所有权限
+        # rds = self.application.rds(2)
+        rdsList = []
         for oneRole in getRoles:
             roleList.append(oneRole.title)
             getPers = await self.application.objects.execute(oneRole.permission)
             for onePer in getPers:
                 permissionSet.add(onePer)
+                onetMethod = eval(onePer.method)[0]
+                tPath = onePer.url+":"+onetMethod.lower()
+                rdsList.append(tPath)
+
+        #redis存储权限
+        rds = self.application.rds(2)
+        perList = str(rdsList)
+        rds.set(resData["username"], perList, ex=7200)
 
 
         #获取权限对应菜单
@@ -116,4 +123,5 @@ class LogoutHandler(RequestHandler):
         rds = self.application.rds(2)
         userSha256 = hashlib.sha256(self.current_user.encode('utf8')).hexdigest()
         rds.delete(userSha256)
+        rds.delete(self.current_user)
         return self.finish(rf().code(200))

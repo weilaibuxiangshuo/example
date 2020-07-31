@@ -4,12 +4,22 @@
       <div class="firstheader"></div>
       <!-- 添加及搜索 -->
       <div class="secondheader">
-        <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加用户</el-button>
-        <div class="msgsearch">
-        <el-input placeholder="用户搜索" v-model.trim="search" clearable @change="serchPutChange" style="width:350px">
-          <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"  ></el-button>
-        </el-input>
-        </div>
+        <el-form ref="btnForm" :inline="true" class="demo-ruleForm">
+          <el-form-item>
+            <el-button @click.native.prevent="addData" type="success" class="addPerStyle">添加用户</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-input
+              placeholder="用户搜索"
+              v-model.trim="search"
+              clearable
+              @change="serchPutChange"
+              style="width:350px"
+            >
+              <el-button slot="append" icon="el-icon-search" @click.native.prevent="btnSearch"></el-button>
+            </el-input>
+          </el-form-item>
+        </el-form>
       </div>
       <hr />
     </div>
@@ -36,8 +46,12 @@
             </span>
           </el-form-item>
           <el-form-item label="关联角色" :label-width="formLabelWidth">
-            <el-checkbox-group v-model="dialogform.checkedData" >
-              <el-checkbox v-for="(one,index) in selectData" :label="one.id" :key="index">{{one.title}}</el-checkbox>
+            <el-checkbox-group v-model="dialogform.checkedData">
+              <el-checkbox
+                v-for="(one,index) in selectData"
+                :label="one.id"
+                :key="index"
+              >{{one.title}}</el-checkbox>
             </el-checkbox-group>
           </el-form-item>
         </el-form>
@@ -102,15 +116,15 @@ const defaultDialogForm = {
   id: "",
   username: "",
   password: "",
-  checkedData:[],
+  checkedData: [],
 };
 
 // 分页初始值
 const defaultPagin = {
   currentPage: 1,
-  pagesizes: [3, 20, 50],
-  pagesize: 3,
-  total: 15
+  pagesizes: [10, 20, 50],
+  pagesize: 10,
+  total: 0,
 };
 
 export default {
@@ -124,7 +138,7 @@ export default {
       dialogform: Object.assign({}, defaultDialogForm),
       formLabelWidth: "100px",
       selectData: [],
-      
+
       passwordStyle: "password",
       // ----------- 表格渲染-----------
       tableData: [],
@@ -134,13 +148,18 @@ export default {
       rules: {
         username: [
           { required: true, message: "用户名不能为空", trigger: "blur" },
-          { min: 5, max: 32, message: "长度在 5 到 32 个字符", trigger: "blur" }
+          {
+            min: 5,
+            max: 32,
+            message: "长度在 5 到 32 个字符",
+            trigger: "blur",
+          },
         ],
         password: [
           { required: true, message: "密码不能为空", trigger: "blur" },
-          { min: 6, message: "长度至少6个字符或以上", trigger: "blur" }
-        ]
-      }
+          { min: 6, message: "长度至少6个字符或以上", trigger: "blur" },
+        ],
+      },
     };
   },
   methods: {
@@ -174,20 +193,24 @@ export default {
     },
     // 确定送出
     confirm() {
-      this.$refs["ruleForm"].validate(val => {
+      this.$refs["ruleForm"].validate((val) => {
         if (val) {
           this.dialogFormVisible = false;
-          let sha256 = require('js-sha256').sha256
-          this.dialogform.password = sha256(this.dialogform.password)
+          let sha256 = require("js-sha256").sha256;
+          this.dialogform.password = sha256(this.dialogform.password);
           let menuData = JSON.stringify(this.dialogform);
           if (this.title === "EDIT") {
-            this.$store.dispatch("peoples/PutUser", menuData).then(response => {
-              this.getAllInfo();
-            });
+            this.$store
+              .dispatch("peoples/PutUser", menuData)
+              .then((response) => {
+                this.getAllInfo();
+              });
           } else {
-            this.$store.dispatch("peoples/AddUser", menuData).then(response => {
-              this.getAllInfo();
-            });
+            this.$store
+              .dispatch("peoples/AddUser", menuData)
+              .then((response) => {
+                this.getAllInfo();
+              });
           }
         }
       });
@@ -219,20 +242,20 @@ export default {
       let dataInfo = {
         currentpage:
           this.pagin.currentPage === null ? 1 : this.pagin.currentPage,
-        pagesize: this.pagin.pagesize
+        pagesize: this.pagin.pagesize,
       };
       if (!!this.search.toString().trim()) {
         dataInfo["search"] = this.search.toString().trim();
         // 有搜索需要恢复初始值，否则会显示错误
         dataInfo["currentpage"] = 1;
-        this.pagin.currentPage =1;
+        this.pagin.currentPage = 1;
       }
-      this.$store.dispatch("peoples/GetUser", dataInfo).then(response => {
-        const {data,total} = response
+      this.$store.dispatch("peoples/GetUser", dataInfo).then((response) => {
+        const { data, total } = response;
         this.tableData = data;
         this.pagin.total = total;
       });
-      this.$store.dispatch("peoples/GetUserRole").then(response => {
+      this.$store.dispatch("peoples/GetUserRole").then((response) => {
         const { data } = response;
         this.selectData = data;
       });
@@ -248,7 +271,7 @@ export default {
       for (let n in row.role) {
         arr1.push(row.role[n].id);
       }
-      this.dialogform.checkedData = arr1
+      this.dialogform.checkedData = arr1;
     },
     // 删除
     handleDelete(index, row) {
@@ -256,7 +279,7 @@ export default {
       arr1.push(row.id);
       this.$store
         .dispatch("peoples/DelUser", JSON.stringify({ id: arr1 }))
-        .then(response => {
+        .then((response) => {
           this.pagin.total -= 1;
           this.getAllInfo();
         });
@@ -276,7 +299,7 @@ export default {
       }
       this.$store
         .dispatch("peoples/DelUser", JSON.stringify({ id: arr1 }))
-        .then(response => {
+        .then((response) => {
           this.getAllInfo();
         });
     },
@@ -295,20 +318,20 @@ export default {
     handleCurrentChange(val) {
       this.pagin.currentPage = val;
       this.getAllInfo();
-    }
+    },
   },
   created() {
     this.getAllInfo();
   },
   filters: {
-    filterper: function(val) {
+    filterper: function (val) {
       let arr1 = [];
       for (let n in val) {
         arr1.push(val[n].title);
       }
       return arr1.join(",");
-    }
-  }
+    },
+  },
 };
 </script>
 <style scoped>
@@ -363,22 +386,4 @@ export default {
   background-color: #f56c6c;
   border-color: #f56c6c;
 }
-
-.spstyle {
-  margin-right: 61px;
-}
-
-.searchStyle {
-  width: 200px;
-  margin-left: 20px;
-}
-
-.msgsearch {
-  display: inline-block;
-}
-
-.msgsearch /deep/ .el-button {
-  margin: 0;
-}
-
 </style>

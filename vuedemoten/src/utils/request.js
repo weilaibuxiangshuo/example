@@ -7,6 +7,7 @@ import { getToken } from '@/utils/auth'
 const service = axios.create({
   // baseURL: process.env.VUE_APP_BASE_API, // url = base url + request url
   baseURL: "/api", // url = base url + request url
+  // baseURL: "", 
   // withCredentials: true, // send cookies when cross-domain requests
   timeout: 5000 // request timeout
 })
@@ -14,8 +15,26 @@ const service = axios.create({
 // request interceptor
 service.interceptors.request.use(
   config => {
-    // do something before request is sent
-
+    // console.log("config",config)
+    // 解决ie缓存问题，ie缓存会导致数据显示错误
+    if(config.method!=="get"){
+      config.transformRequest=[function(data){
+        if(typeof(data)==="object"){
+          data.ran = encodeURIComponent(Math.random())
+          return JSON.stringify(data)
+        }else if(typeof(data)==="string"){
+          const newdata = eval("("+data+")");
+          newdata.ran = encodeURIComponent(Math.random())
+          return JSON.stringify(newdata)
+        }else{
+          return data
+        }
+      }]
+    }else{
+      // console.log("get看",config.url)
+      const neturl = config.url + "?ran=" + encodeURIComponent(Math.random())
+      config.url = neturl
+    }
     if (store.getters.token) {
       // let each request carry token
       // ['X-Token'] is a custom headers key
@@ -45,6 +64,7 @@ service.interceptors.response.use(
    */
   response => {
     // const res = response.data
+    // console.log("response.data",response.data)
     const { data, status } = response
     const statusCode = ["200", "201", "202", "203", "204"]
     const result1 = statusCode.indexOf(status.toString())

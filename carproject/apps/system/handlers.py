@@ -2,8 +2,8 @@
 from tornado.web import RequestHandler, gen, authenticated
 import peewee_async, json,hashlib
 
-from apps.system.models import Menus, Permissions, Roles, Users, rolePermission,userRole
-from apps.system.forms import MenusForm, PermissionsForm, RoleForm,UserForm
+from apps.system.models import Menus, Permissions, Roles, Users, rolePermission,userRole,WhiteList
+from apps.system.forms import MenusForm, PermissionsForm, RoleForm,UserForm,WhiteForm
 
 from tools.bcrpt_api import PasswordApi as pd
 from tools.resful_api import Resf as rf
@@ -466,6 +466,7 @@ class UserHandler(RequestHandler):
 
     #添加用户
     async def post(self,*args,**kwargs):
+
         reqData = json.loads(self.request.body.decode("utf8"))
         # 生成wtform-tornado验证格式
         reqDict = {m: [str(n)] for m, n in reqData.items()}
@@ -529,3 +530,111 @@ class UserHandler(RequestHandler):
             one = int(one)
             await self.application.objects.execute(Users.delete().where(Users.id == one))
         self.finish(rf().code(204))
+
+
+@dispatch_methods([newAuth])
+class WhiteListHandler(RequestHandler):
+    # 分页返回数据
+    async def get(self, page, size, *args, **kwargs):
+
+        # 所有过滤或查询的列表集合
+        allDataQuery = []
+        page = int(page)
+        size = int(size)
+        # 判断search是否有值，有值返回搜索的值
+        try:
+            search = self.request.arguments['search'][0].decode("utf8")
+        except Exception as f:
+            search = None
+        if search:
+            allDataQuery.append((WhiteList.ip == search))
+
+        ipAllObj = await self.application.objects.execute(
+            WhiteList.newData(allDataQuery).paginate(page, paginate_by=size).order_by(WhiteList.id.desc()))
+        total = await self.application.objects.execute(WhiteList.newData(allDataQuery))
+
+        list1 = []
+        is_global = []
+        for one in ipAllObj:
+            dict1 = {
+                "id": one.id,
+                "ip": one.ip,
+                "is_through":"1" if one.is_through else "2" ,
+            }
+            if one.is_global:
+                is_global.append(one)
+            list1.append(dict1)
+        resData = rf().code(200)
+        resData["data"] = list1
+        resData["total"] = len(total)
+        resData["is_global"] = True if len(is_global)>=1 else False
+        return self.finish(resData)
+
+    #添加IP
+    async def post(self,*args,**kwargs):
+
+        reqData = json.loads(self.request.body.decode("utf8"))
+        # 生成wtform-tornado验证格式
+        reqDict = {m: [str(n)] for m, n in reqData.items()}
+        valiDict = WhiteForm(reqDict)
+        if valiDict.validate():
+            newData = valiDict.data
+            through = False if reqData["is_through"] == "2" else True
+            try:
+                await self.application.objects.get(WhiteList, ip=newData['ip'])
+                resData = rf().set(404,"失败IP已存在")
+                return self.finish(resData)
+            except WhiteList.DoesNotExist as e:
+                async with self.application.objects.atomic():
+                    await self.application.objects.create(WhiteList,ip=newData['ip'],is_through=through)
+                return self.finish(rf().code(201))
+        else:
+            resData = rf().code(404)
+            resData['msg'] = valiDict.errors
+            return self.finish(resData)
+
+
+    # 修改IP
+    async def put(self, *args, **kwargs):
+
+        reqData = json.loads(self.request.body.decode("utf8"))
+        # 生成wtform-tornado验证格式
+        reqDict = {m: [str(n)] for m, n in reqData.items()}
+        valiDict = WhiteForm(reqDict)
+        if valiDict.validate():
+            newData = valiDict.data
+            through = False if reqData["is_through"] == "2" else True
+            try:
+                oneIp = await self.application.objects.get(WhiteList, id=reqData['id'])
+            except WhiteList.DoesNotExist as e:
+                resData = rf().code(404)
+                return self.finish(resData)
+            async with self.application.objects.atomic():
+                oneIp.ip = newData['ip']
+                oneIp.is_through = through
+                await self.application.objects.update(oneIp)
+            return self.finish(rf().code(202))
+        else:
+            resData = rf().code(404)
+            resData['msg'] = valiDict.errors
+            return self.finish(resData)
+
+    # 删除IP
+    async def delete(self, *args, **kwargs):
+        reqInfo = json.loads(self.request.body.decode("utf8"))
+        for one in reqInfo['id']:
+            one = int(one)
+            await self.application.objects.execute(WhiteList.delete().where(WhiteList.id == one))
+        self.finish(rf().code(204))
+
+
+class WhiteListSetHandler(RequestHandler):
+    async def post(self):
+        reqData = json.loads(self.request.body.decode("utf8"))
+        # 生成wtform-tornado验证格式
+        btncontrol = False if reqData["btncontrol"] == "2" else True
+        res = await self.application.objects.execute(WhiteList.update(is_global=btncontrol))
+        if not res:
+            resData = rf().set(404, "IP限制开启失败")
+            return self.finish(resData)
+        return self.finish(rf().code(202))

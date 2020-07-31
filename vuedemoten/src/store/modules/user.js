@@ -1,5 +1,5 @@
 import { login, logout, getInfo } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
+import { getToken, setToken, removeToken} from '@/utils/auth'
 import { resetRouter,constantRoutes,asyncRouters } from '@/router'
 import Layout from '@/layout'
 import path, { resolve } from 'path'

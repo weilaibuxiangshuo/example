@@ -1,5 +1,9 @@
 # -*- coding:utf-8 -*-
-import os
+import os,sys
+
+kkkpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(kkkpath)
+
 from tornado import web,gen,ioloop
 
 from maincar.mysqlconfig import asyncConnMysql

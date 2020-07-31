@@ -17,7 +17,7 @@
               @change="timePutChange"
             >></el-date-picker>
           </el-form-item>
-          <el-form-item>
+          <el-form-item >
             <el-select
               v-model.trim="refresh"
               placeholder="自动刷新"
@@ -44,6 +44,9 @@
               <el-option label="自锁定" value="5"></el-option>
               <el-option label="自确定" value="6"></el-option>
             </el-select>
+
+          </el-form-item>
+          <el-form-item>
             <el-button
               icon="el-icon-refresh-left"
               type="primary"
@@ -248,8 +251,8 @@ const defaultDialogForm = {
 // 分页初始值
 const defaultPagin = {
   currentPage: 1,
-  pagesizes: [3, 20, 50],
-  pagesize: 3,
+  pagesizes: [10, 20, 50],
+  pagesize: 10,
   total: 0,
 };
 

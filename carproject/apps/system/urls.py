@@ -2,7 +2,8 @@
 from tornado.web import URLSpec
 
 from apps.system.handlers import (MenuHandler,MenuListHandler,PermissionHandler,PermissionMenuHandler,
-                                  RolePermissionHandler,RoleHandler,UserRoleHandler,UserHandler)
+                                  RolePermissionHandler,RoleHandler,UserRoleHandler,UserHandler,WhiteListHandler,
+                                  WhiteListSetHandler)
 
 urlpatterns = [
     URLSpec("/menu/", MenuHandler),
@@ -17,4 +18,7 @@ urlpatterns = [
     URLSpec("/user/", UserHandler),
     URLSpec("/user/(\d+)/(\d+)/", UserHandler),
     URLSpec("/user/role/", UserRoleHandler),
+    URLSpec("/whitelist/", WhiteListHandler),
+    URLSpec("/whitelist/set/", WhiteListSetHandler),
+    URLSpec("/whitelist/(\d+)/(\d+)/", WhiteListHandler),
 ]

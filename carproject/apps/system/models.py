@@ -83,3 +83,20 @@ class Users(BaseModel):
 userRole = Users.role.get_through_model()
 
 
+class WhiteList(BaseModel):
+    ip = peewee.CharField(max_length=32,verbose_name="ip")
+    is_through = peewee.BooleanField(default=False,verbose_name="是否通过")
+    is_global = peewee.BooleanField(default=False,verbose_name="是否开启")
+
+    @classmethod
+    def newData(cls,params):
+        params = tuple(params)
+        if params:
+            return cls.select().where(*params)
+        else:
+            return cls.select()
+
+    class Meat:
+        table_name = "whitelist"
+
+
