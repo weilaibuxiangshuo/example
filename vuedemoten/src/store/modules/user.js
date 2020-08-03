@@ -38,7 +38,7 @@ const mutations = {
 }
 
 // 深度拷贝
-const deepobj = (data) => {
+export const deepobj = (data) => {
   const obj = data.constructor === Array ? [] : {}
   for (let n in data) {
     if (data[n].constructor === Array) {

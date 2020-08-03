@@ -404,7 +404,7 @@ export default {
       this.boolStatus = true;
       this.getAllInfo();
     },
-    // 添加目标
+    // 刷新目标
     refreshData() {
       if (!!this.timeChange) {
         this.getAllInfo();

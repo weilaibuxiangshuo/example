@@ -51,7 +51,7 @@
               icon="el-icon-refresh-left"
               type="primary"
               plain
-              @click.native.prevent="refreshBtnShow"
+              @click.native.prevent="refreshData"
             ></el-button>
           </el-form-item>
           <el-form-item>
@@ -143,13 +143,13 @@
                 <div slot="reference" class="name-wrapper">
                   <div
                     style="color:#3c0ef7"
-                  >{{ scope.row.is_lock && scope.row.is_if_show?scope.row.name:scope.row.name.substr(0,3)+"***" }}</div>
+                  >{{ scope.row.is_lock && scope.row.is_if_show?scope.row.name:scope.row.name.substr(0,2)+"***" }}</div>
                 </div>
               </el-popover>
             </div>
             <div
               v-else
-            >{{ scope.row.is_lock && scope.row.is_if_show?scope.row.name:scope.row.name.substr(0,3)+"***" }}</div>
+            >{{ scope.row.is_lock && scope.row.is_if_show?scope.row.name:scope.row.name.substr(0,2)+"***" }}</div>
           </template>
         </el-table-column>
         <el-table-column label="对应金额" prop="amount" width="150px">
@@ -255,8 +255,9 @@ const defaultPagin = {
   pagesize: 10,
   total: 0,
 };
-
+import {deepobj} from "../../../store/modules/user"
 export default {
+  
   data() {
     const onlyidVali = (rule, value, callback) => {
 
@@ -276,6 +277,7 @@ export default {
       filterDisplay: "",
       refresh: "",
       autoRefresh: "",
+      autoReNum:"",
       searchData: "",
       searchSetData: [],
       searchContext: "",
@@ -356,17 +358,40 @@ export default {
         return false;
       }
     },
-    // 刷新
+    autoRefreshFn(){
+        this.getAllInfo()        
+        this.autoRefresh = setTimeout(this.autoRefreshFn, this.autoReNum);
+    },
+    // 刷新目标
+    refreshData() {
+      if (!!this.timeChange) {
+        this.getAllInfo();
+      } else {
+        const h = this.$createElement;
+        this.$notify({
+          message: h(
+            "b",
+            { style: "color: #ef9206" },
+            "请先选择-所属日期，才能添加记录"
+          ),
+          duration: 2000,
+        });
+        return false;
+      }
+    },
+    // 自动刷新
     changeMethod(val) {
       if (!!this.timeChange) {
-        if (val === "") {
-          clearInterval(this.autoRefresh);
+        if (val.toString() === "") {
+          clearTimeout(this.autoRefresh);
           return false;
         }
-        clearInterval(this.autoRefresh);
+        clearTimeout(this.autoRefresh);
         const valInt = parseInt(val) * 1000;
-        this.autoRefresh = setInterval(this.getAllInfo, valInt);
+        this.autoReNum = valInt
+        setTimeout(this.autoRefreshFn,this.autoReNum)
       } else {
+        // clearInterval(this.autoRefresh);
         this.refresh = "";
         const h = this.$createElement;
         this.$notify({
@@ -582,6 +607,9 @@ export default {
   },
   created() {
     // this.getAllInfo();
+  },
+  beforeDestroy(){
+    clearTimeout(this.autoRefresh);
   },
 };
 </script>
